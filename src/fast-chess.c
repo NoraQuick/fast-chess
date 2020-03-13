@@ -1852,20 +1852,25 @@ int legalCaptures(Move * legalCaptures, Position * position, char color) {
 
 // ====== GAME CONTROL =======
 
+// ==== Determines if it is checkmate ====
 BOOL isCheckmate(Position * position) {
+	// if is in check and has no legal moves
 	if (isCheck(position->board, position->toMove) && legalMovesCount(position, position->toMove) == 0)
 		return TRUE;
 	else
 		return FALSE;
 }
 
+// ==== Determines if it is a stalemate ====
 BOOL isStalemate(Position * position) {
+	// if no legal moves but not in check
 	if (!isCheck(position->board, position->toMove) && legalMovesCount(position, position->toMove) == 0)
 		return TRUE;
 	else
 		return FALSE;
 }
 
+// ==== Determines if there is insufficient material (neither player can checkmate) ====
 BOOL hasInsufficientMaterial(int board[]) {
 	int pieceCount = countBits(getOccupiedSquares(board));
 
@@ -1877,12 +1882,14 @@ BOOL hasInsufficientMaterial(int board[]) {
 	return FALSE;
 }
 
+// ==== Determines if it is the endgame ====
 BOOL isEndgame(int board[]) {
 	if (countBits(getOccupiedSquares(board)) <= ENDGAME_PIECE_COUNT)
 		return TRUE;
 	return FALSE;
 }
 
+// ==== Determines if the move limit has been reached ====
 BOOL isOver75MovesRule(Position * position) {
 	if (position->halfmoveClock >= 150)
 		return TRUE;
@@ -1890,7 +1897,9 @@ BOOL isOver75MovesRule(Position * position) {
 		return FALSE;
 }
 
+// ==== Determines if the game has ended ====
 BOOL hasGameEnded(Position * position) {
+	// checkmate, stalemate, insufficient material, or move limit reached
 	if ( isCheckmate(position) ||
 		 isStalemate(position) ||
 		 hasInsufficientMaterial(position->board) ||
@@ -1900,15 +1909,21 @@ BOOL hasGameEnded(Position * position) {
 		return FALSE;
 }
 
+// ==== Prints the outcome of the game ====
 void printOutcome(Position * position) {
+	// Black in checkmate
 	if (isCheckmate(position) && position->toMove == BLACK)
 		printf("WHITE wins!\n");
+	// White in checkmate
 	if (isCheckmate(position) && position->toMove == WHITE)
 		printf("BLACK wins!\n");
+	// Draw: Stalemate
 	if (isStalemate(position))
 		printf("Draw by stalemate!\n");
+	// Draw: Insufficient Material
 	if (hasInsufficientMaterial(position->board))
 		printf("Draw by insufficient material!\n");
+	// Draw: Move limit reached
 	if ( isOver75MovesRule(position) )
 		printf("Draw by 75 move rule!\n");
 	fflush(stdout);
@@ -1916,6 +1931,7 @@ void printOutcome(Position * position) {
 
 // ========== EVAL ===========
 
+// ==== Returns the win score for specified color ====
 int winScore(char color) {
 	if (color == WHITE)
 		return 10*PIECE_VALUES[KING];
@@ -1924,11 +1940,15 @@ int winScore(char color) {
 	return 0;
 }
 
+// ==== Returns the material total for specified color ====
 int materialSum(int board[], char color) {
 	int i, material = 0;
 
+	// goes through board
 	for (i=0; i<NUM_SQUARES; i++) {
+		// if space is occupied by a piece of specified color
 		if (board[i] != EMPTY && (board[i]&COLOR_MASK) == color) {
+			// add piece value to material
 			material += PIECE_VALUES[board[i]&PIECE_MASK];
 		}
 	}
@@ -1936,10 +1956,12 @@ int materialSum(int board[], char color) {
 	return material;
 }
 
+// ==== Returns the difference of the colors' material sum ====
 int materialBalance(int board[]) {
 	return materialSum(board, WHITE) - materialSum(board, BLACK);
 }
 
+// ==== Returns positional bonus for specified color
 int positionalBonus(int board[], char color) {
 	int bonus = 0;
 
@@ -1947,9 +1969,11 @@ int positionalBonus(int board[], char color) {
 	for (i=0; i<NUM_SQUARES; i++) {
 		int piece = board[i];
 
+		// if space is occupied by piece of specified color
 		if (piece != EMPTY && (piece&COLOR_MASK) == color) {
 			int pieceType = piece&PIECE_MASK;
 
+			// Switch statement to handle each piece and their corresponding bonuses
 			switch(pieceType) {
 			case PAWN:
 				if (color == WHITE) {
@@ -1990,11 +2014,11 @@ int positionalBonus(int board[], char color) {
 				break;
 
 			case ROOK:
-                if (isOpenFile(index2bb(i), board)) {
-                    bonus += ROOK_OPEN_FILE_BONUS;
-                } else if (isSemiOpenFile(index2bb(i), board)) {
-                    bonus += ROOK_SEMI_OPEN_FILE_BONUS;
-                }
+                		if (isOpenFile(index2bb(i), board)) {
+                    			bonus += ROOK_OPEN_FILE_BONUS;
+                		} else if (isSemiOpenFile(index2bb(i), board)) {
+                    			bonus += ROOK_SEMI_OPEN_FILE_BONUS;
+                		}
 
 				if (color == WHITE) {
 					if (index2bb(i) & RANK_7) {
@@ -2028,6 +2052,7 @@ int positionalBonus(int board[], char color) {
 	return bonus;
 }
 
+// ==== Returns the difference of each colors' positional bonus ====
 int positionalBalance(int board[]) {
 	return positionalBonus(board, WHITE) - positionalBonus(board, BLACK);
 }
