@@ -1852,20 +1852,25 @@ int legalCaptures(Move * legalCaptures, Position * position, char color) {
 
 // ====== GAME CONTROL =======
 
+// ==== Determines if it is checkmate ====
 BOOL isCheckmate(Position * position) {
+	// if is in check and has no legal moves
 	if (isCheck(position->board, position->toMove) && legalMovesCount(position, position->toMove) == 0)
 		return TRUE;
 	else
 		return FALSE;
 }
 
+// ==== Determines if it is a stalemate ====
 BOOL isStalemate(Position * position) {
+	// if no legal moves but not in check
 	if (!isCheck(position->board, position->toMove) && legalMovesCount(position, position->toMove) == 0)
 		return TRUE;
 	else
 		return FALSE;
 }
 
+// ==== Determines if there is insufficient material (neither player can checkmate) ====
 BOOL hasInsufficientMaterial(int board[]) {
 	int pieceCount = countBits(getOccupiedSquares(board));
 
@@ -1877,12 +1882,14 @@ BOOL hasInsufficientMaterial(int board[]) {
 	return FALSE;
 }
 
+// ==== Determines if it is the endgame ====
 BOOL isEndgame(int board[]) {
 	if (countBits(getOccupiedSquares(board)) <= ENDGAME_PIECE_COUNT)
 		return TRUE;
 	return FALSE;
 }
 
+// ==== Determines if the move limit has been reached ====
 BOOL isOver75MovesRule(Position * position) {
 	if (position->halfmoveClock >= 150)
 		return TRUE;
@@ -1890,7 +1897,9 @@ BOOL isOver75MovesRule(Position * position) {
 		return FALSE;
 }
 
+// ==== Determines if the game has ended ====
 BOOL hasGameEnded(Position * position) {
+	// checkmate, stalemate, insufficient material, or move limit reached
 	if ( isCheckmate(position) ||
 		 isStalemate(position) ||
 		 hasInsufficientMaterial(position->board) ||
@@ -1900,15 +1909,21 @@ BOOL hasGameEnded(Position * position) {
 		return FALSE;
 }
 
+// ==== Prints the outcome of the game ====
 void printOutcome(Position * position) {
+	// Black in checkmate
 	if (isCheckmate(position) && position->toMove == BLACK)
 		printf("WHITE wins!\n");
+	// White in checkmate
 	if (isCheckmate(position) && position->toMove == WHITE)
 		printf("BLACK wins!\n");
+	// Draw: Stalemate
 	if (isStalemate(position))
 		printf("Draw by stalemate!\n");
+	// Draw: Insufficient Material
 	if (hasInsufficientMaterial(position->board))
 		printf("Draw by insufficient material!\n");
+	// Draw: Move limit reached
 	if ( isOver75MovesRule(position) )
 		printf("Draw by 75 move rule!\n");
 	fflush(stdout);
@@ -1916,6 +1931,7 @@ void printOutcome(Position * position) {
 
 // ========== EVAL ===========
 
+// ==== Returns the win score for specified color ====
 int winScore(char color) {
 	if (color == WHITE)
 		return 10*PIECE_VALUES[KING];
@@ -1924,11 +1940,15 @@ int winScore(char color) {
 	return 0;
 }
 
+// ==== Returns the material total for specified color ====
 int materialSum(int board[], char color) {
 	int i, material = 0;
 
+	// goes through board
 	for (i=0; i<NUM_SQUARES; i++) {
+		// if space is occupied by a piece of specified color
 		if (board[i] != EMPTY && (board[i]&COLOR_MASK) == color) {
+			// add piece value to material
 			material += PIECE_VALUES[board[i]&PIECE_MASK];
 		}
 	}
@@ -1936,10 +1956,12 @@ int materialSum(int board[], char color) {
 	return material;
 }
 
+// ==== Returns the difference of the colors' material sum ====
 int materialBalance(int board[]) {
 	return materialSum(board, WHITE) - materialSum(board, BLACK);
 }
 
+// ==== Returns positional bonus for specified color
 int positionalBonus(int board[], char color) {
 	int bonus = 0;
 
@@ -1947,9 +1969,11 @@ int positionalBonus(int board[], char color) {
 	for (i=0; i<NUM_SQUARES; i++) {
 		int piece = board[i];
 
+		// if space is occupied by piece of specified color
 		if (piece != EMPTY && (piece&COLOR_MASK) == color) {
 			int pieceType = piece&PIECE_MASK;
 
+			// Switch statement to handle each piece and their corresponding bonuses
 			switch(pieceType) {
 			case PAWN:
 				if (color == WHITE) {
@@ -1990,11 +2014,11 @@ int positionalBonus(int board[], char color) {
 				break;
 
 			case ROOK:
-                if (isOpenFile(index2bb(i), board)) {
-                    bonus += ROOK_OPEN_FILE_BONUS;
-                } else if (isSemiOpenFile(index2bb(i), board)) {
-                    bonus += ROOK_SEMI_OPEN_FILE_BONUS;
-                }
+                		if (isOpenFile(index2bb(i), board)) {
+                    			bonus += ROOK_OPEN_FILE_BONUS;
+                		} else if (isSemiOpenFile(index2bb(i), board)) {
+                    			bonus += ROOK_SEMI_OPEN_FILE_BONUS;
+                		}
 
 				if (color == WHITE) {
 					if (index2bb(i) & RANK_7) {
@@ -2028,40 +2052,52 @@ int positionalBonus(int board[], char color) {
 	return bonus;
 }
 
+// ==== Returns the difference of each colors' positional bonus ====
 int positionalBalance(int board[]) {
 	return positionalBonus(board, WHITE) - positionalBonus(board, BLACK);
 }
 
+// ==== Returns the value of the position at the end of the game ==== 
 int endNodeEvaluation(Position * position) {
+	// If checkmate
 	if (isCheckmate(position)) {
 		return winScore(opponent(position->toMove));
 	}
+	// Otherwise
 	if (isStalemate(position) || hasInsufficientMaterial(position->board) || isOver75MovesRule(position)) {
 		return 0;
 	}
 	return 0;
 }
 
+// ==== Returns the value of the current position ====
 int staticEvaluation(Position * position) {
+	// If the game is over, end node evaluation
 	if (hasGameEnded(position))
 		return endNodeEvaluation(position);
 	else
 		return materialBalance(position->board) + positionalBalance(position->board);
 }
 
+// ==== Returns count of moves that end in capture from position to target square ====
+// ==== Stores them in captures ====
 int getCaptureSequence(Move * captures, Position * position, int targetSquare) {
 	Move allCaptures[MAX_BRANCHING_FACTOR], targetCaptures[MAX_ATTACKING_PIECES];
-	int captureCount = legalCaptures(allCaptures, position, position->toMove);
+	int captureCount = legalCaptures(allCaptures, position, position->toMove);	// Gets all legal captures from position
 	int i, j, targetCount = 0;
 
+	// For all legal captures
 	for (i=0; i<captureCount; i++) {
+		// If the end position is the target square
 		if ( getTo(allCaptures[i]) == targetSquare ) {
+			// Add capture to target captures and increase target count
 			targetCaptures[targetCount++] = allCaptures[i];
 		}
 	}
 
 	Move captureBuffer[targetCount];
 
+	// Order the moves in order of increasing value
 	BOOL sorted;
 	for (i=0; i<targetCount; i++) {
 		sorted = FALSE;
@@ -2087,31 +2123,36 @@ int getCaptureSequence(Move * captures, Position * position, int targetSquare) {
 	return targetCount;
 }
 
+// ==== Determines the consequence of going through a list of moves at the target square ====
 int staticExchangeEvaluation(Position * position, int targetSquare) {
 	Move captures[MAX_ATTACKING_PIECES];
-	int attackCount = getCaptureSequence(captures, position, targetSquare);
+	int attackCount = getCaptureSequence(captures, position, targetSquare); 	// Get the number of captures
 	int value = 0;
 
+	// As long as there are moves to be made, recurse
 	if ( attackCount > 0 ) {
 		Position newPosition;
-		updatePosition(&newPosition, position, captures[0]);
+		updatePosition(&newPosition, position, captures[0]);	// Where piece would be if the move was actually made
 		int capturedPiece = position->board[targetSquare] & PIECE_MASK;
 		int pieceValue = PIECE_VALUES[capturedPiece];
-		value = pieceValue - staticExchangeEvaluation(&newPosition, targetSquare);
+		value = pieceValue - staticExchangeEvaluation(&newPosition, targetSquare);	// Consequence of making the move
 	}
 
 	return value>0?value:0;
 }
 
+// ==== Returns value at position using quiescence ====
 int quiescenceEvaluation(Position * position) {
 	int staticScore = staticEvaluation(position);
 
+	// If the game is over, static evaluation
 	if (hasGameEnded(position))
 		return staticScore;
 
 	Move captures[MAX_BRANCHING_FACTOR];
-	int captureCount = legalCaptures(captures, position, position->toMove);
-
+	int captureCount = legalCaptures(captures, position, position->toMove); // Get legal captures
+	
+	// If there are no more moves, static evaluation
 	if (captureCount == 0) {
 		return staticScore;
 	} else {
@@ -2122,8 +2163,8 @@ int quiescenceEvaluation(Position * position) {
 			if (staticExchangeEvaluation(position, getTo(captures[i])) <= 0)
 				break;
 
-			updatePosition(&newPosition, position, captures[i]);
-			int score = quiescenceEvaluation(&newPosition);
+			updatePosition(&newPosition, position, captures[i]);	// Move position to next position
+			int score = quiescenceEvaluation(&newPosition);		// Recurse on new position
 
 			if ( (position->toMove == WHITE && score > bestScore) ||
 				 (position->toMove == BLACK && score < bestScore) ) {
@@ -2137,18 +2178,19 @@ int quiescenceEvaluation(Position * position) {
 
 // ========= SEARCH ==========
 
+// ==== Perfroms a static search ====
 Node staticSearch(Position * position) {
 	int bestScore = position->toMove==WHITE?INT32_MIN:INT32_MAX;
 	Move bestMove = 0;
 
 	Move moves[MAX_BRANCHING_FACTOR];
-	int moveCount = legalMoves(moves, position, position->toMove);
+	int moveCount = legalMoves(moves, position, position->toMove);	// Gets legal moves
 
 	Position newPosition;
 	int i;
 	for (i=0; i<moveCount; i++) {
-		updatePosition(&newPosition, position, moves[i]);
-		int score = staticEvaluation(&newPosition);
+		updatePosition(&newPosition, position, moves[i]);	// Moves to new position
+		int score = staticEvaluation(&newPosition);		// Recurse at new position
 
 		if (score == winScore(position->toMove)) {
 			return (Node) { .move = moves[i], .score = score };
@@ -2163,19 +2205,19 @@ Node staticSearch(Position * position) {
 
 	return (Node) { .move = bestMove, .score = bestScore };
 }
-
+// ==== Performs a quiescence search ====
 Node quiescenceSearch(Position * position) {
 	int bestScore = position->toMove==WHITE?INT32_MIN:INT32_MAX;
 	Move bestMove = 0;
 
 	Move moves[MAX_BRANCHING_FACTOR];
-	int moveCount = legalMoves(moves, position, position->toMove);
+	int moveCount = legalMoves(moves, position, position->toMove);	// Gets legal moves
 
 	Position newPosition;
 	int i;
 	for (i=0; i<moveCount; i++) {
-		updatePosition(&newPosition, position, moves[i]);
-		int score = quiescenceEvaluation(&newPosition);
+		updatePosition(&newPosition, position, moves[i]);	// Moves to new position
+		int score = quiescenceEvaluation(&newPosition);		// Recurses at new position
 
 		if (score == winScore(position->toMove)) {
 			return (Node) { .move = moves[i], .score = score };
