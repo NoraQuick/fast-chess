@@ -1681,12 +1681,15 @@ Bitboard rookMoves(Bitboard moving_piece, int board[], char color) {
 
 // ========== QUEEN ==========
 
+// Get all queens on the board
 Bitboard getQueens(int board[]) { return getPieces(board, QUEEN); }
 
+// Return queen attacks (combiniation of bishop and rook attacks)
 Bitboard queenAttacks(Bitboard moving_piece, int board[], char color) {
     return rookAttacks(moving_piece, board, color) | bishopAttacks(moving_piece, board, color);
 }
 
+// Return queen moves (combination of bishop and rook moves)
 Bitboard queenMoves(Bitboard moving_piece, int board[], char color) {
     return rookMoves(moving_piece, board, color) | bishopMoves(moving_piece, board, color);
 }
