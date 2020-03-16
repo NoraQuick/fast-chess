@@ -978,23 +978,35 @@ char countPieces(Bitboard bitboard) {
     return count;
 }
 
-// ======= DIRECTIONS ========
+// ==============================================================
+// 					========= DIRECTIONS ==========
+// ==============================================================
 
+// Shifts entire bitboard to the east
 Bitboard east(Bitboard bb) {
+	// Shift bitboard to the right, nullify far left column
     return (bb << 1) & not(FILE_A);
 }
 
+// Shifts entire bitboard to the west
 Bitboard west(Bitboard bb) {
+	// Shift bitboard to the left, nullify far right column
     return (bb >> 1) & not(FILE_H);
 }
 
+// Shifts entire bitboard to the north
 Bitboard north(Bitboard bb) {
+	// Shift bitboard north, nullify bottommost row
     return (bb << 8) & not(RANK_1);
 }
 
+// Shifts entire bitboard to the south
 Bitboard south(Bitboard bb) {
+	// Shift bitboard south, nullify topmost row
     return (bb >> 8) & not(RANK_8);
 }
+
+// Combinations of the above to get NE, SE, NW, SW movements
 
 Bitboard NE(Bitboard bb) {
     return north(east(bb));
@@ -1012,100 +1024,134 @@ Bitboard SW(Bitboard bb) {
     return south(west(bb));
 }
 
+// Knight movements
+
 Bitboard WNW(Bitboard moving_piece) {
+	// Move bitboard two spaces west and one space north, nullify 2 right and 1 bottom
     return moving_piece << 6 & not(FILE_G | FILE_H | RANK_1);
 }
 
 Bitboard ENE(Bitboard moving_piece) {
+	// Move bitboard two spaces east and one space north, nullify 2 left and 1 bottom
     return moving_piece << 10 & not(FILE_A | FILE_B | RANK_1);
 }
 
 Bitboard NNW(Bitboard moving_piece) {
+	// Move bitboard two spaces north and one space west, nullify 2 bottom and 1 right
     return moving_piece << 15 & not(FILE_H | RANK_1 | RANK_2);
 }
 
 Bitboard NNE(Bitboard moving_piece) {
+	// Move bitboard two spaces north and one space east, nullify 2 bottom and 1 left
     return moving_piece << 17 & not(FILE_A | RANK_1 | RANK_2);
 }
 
 Bitboard ESE(Bitboard moving_piece) {
+	// Move bitboard two spaces east and one space south, nullify 2 right and 1 top
     return moving_piece >> 6 & not(FILE_A | FILE_B | RANK_8);
 }
 
 Bitboard WSW(Bitboard moving_piece) {
+	// Move bitboard two spaces west and one space south, nullify 2 left and 1 top
     return moving_piece >> 10 & not(FILE_G | FILE_H | RANK_8);
 }
 
 Bitboard SSE(Bitboard moving_piece) {
+	// Move bitboard two spaces south and one space east, nullify 2 top and 1 left
     return moving_piece >> 15 & not(FILE_A | RANK_7 | RANK_8);
 }
 
 Bitboard SSW(Bitboard moving_piece) {
+	// Move bitboard two spaces south and one space west, nullify 2 top and 1 right
     return moving_piece >> 17 & not(FILE_H | RANK_7 | RANK_8);
 }
 
+// ==============================================================
+// 					========= PIECES ==========
+// ==============================================================
+
 // ========== PAWN ===========
 
+// Retrieves all of the pawns on the board as a bitboard
 Bitboard getPawns(int board[]) { return getPieces(board, PAWN); }
 
+// Moves pawn one space forward
 Bitboard pawnSimplePushes(Bitboard moving_piece, int board[], char color) {
 	switch(color) {
 	case WHITE:
+		// Bitwise and between the piece movement and empty squares
 		return north(moving_piece) & getEmptySquares(board);
 	case BLACK:
+		// Bitwise and between the piece movement and empty squares
 		return south(moving_piece) & getEmptySquares(board);
 	}
 	return 0;
 }
 
+// Moves pawn 2 spaces forward
 Bitboard pawnDoublePushes(Bitboard moving_piece, int board[], char color) {
 	switch(color) {
 	case WHITE:
+		// Bitwise and between the piece movement and empty squares
 		return north(pawnSimplePushes(moving_piece, board, color)) & (getEmptySquares(board) & RANK_4);
 	case BLACK:
+		// Bitwise and between the piece movement and empty squares
 		return south(pawnSimplePushes(moving_piece, board, color)) & (getEmptySquares(board) & RANK_5);
 	}
 	return 0;
 }
 
+// Returns bitwise or of moving pawn one or two space forward
 Bitboard pawnPushes(Bitboard moving_piece, int board[], char color) {
 	return pawnSimplePushes(moving_piece, board, color) | pawnDoublePushes(moving_piece, board, color);
 }
 
+// Attacks with pawn moving east
 Bitboard pawnEastAttacks(Bitboard moving_piece, int board[], char color) {
 	switch(color) {
 	case WHITE:
+		// White comes from south, therefore moves northeast
         return NE(moving_piece);
 	case BLACK:
+		// Black comes from north, therefore moves southeast
         return SE(moving_piece);
 	}
 	return 0;
 }
 
+// Attacks with pawn moving west
 Bitboard pawnWestAttacks(Bitboard moving_piece, int board[], char color) {
 	switch(color) {
 	case WHITE:
+		// White comes from south, therefore moves northeast
         return NW(moving_piece);
 	case BLACK:
+		// Black comes from north, therefore moves southeast
         return SW(moving_piece);
 	}
 	return 0;
 }
 
+// Returns bitwise or of attacking east and west with pawn
 Bitboard pawnAttacks(Bitboard moving_piece, int board[], char color) {
 	return pawnEastAttacks(moving_piece, board, color) | pawnWestAttacks(moving_piece, board, color);
 }
 
+// Captures with pawn
 Bitboard pawnSimpleCaptures(Bitboard moving_piece, int board[], char color) {
+	// Bitwise and between the pawn movement and the retrieval of colored pieces from the board
 	return pawnAttacks(moving_piece, board, color) & getColoredPieces(board, opponent(color));
 }
 
+// Checks to see if the "En passant" maneuver is a valid move
 Bitboard pawnEpCaptures(Bitboard moving_piece, Position * position, char color) {
+	// If the en passant square does not exist, return 0
 	if (position->epSquare == -1)
 		return 0;
 
 	Bitboard valid_ep_square = 0;
 
+	// Get the valid en passant move as a bitboard
 	switch(color) {
 	case WHITE:
 		valid_ep_square = index2bb(position->epSquare) & RANK_6;
@@ -1115,17 +1161,21 @@ Bitboard pawnEpCaptures(Bitboard moving_piece, Position * position, char color) 
 		break;
 	}
 
+	// Return the pawn attack bitwise anded with the en passant move
 	return pawnAttacks(moving_piece, position->board, color) & valid_ep_square;
 }
 
+// Returns the simple capture bitwise or'ed with the en passant capture
 Bitboard pawnCaptures(Bitboard moving_piece, Position * position, char color) {
     return pawnSimpleCaptures(moving_piece, position->board, color) | pawnEpCaptures(moving_piece, position, color);
 }
 
+// Returns the bitwise or of capturing or moving forward with a pawn
 Bitboard pawnMoves(Bitboard moving_piece, Position * position, char color) {
 	return pawnPushes(moving_piece, position->board, color) | pawnCaptures(moving_piece, position, color);
 }
 
+// Checks to see if a pawn is moving 2 spaces forward
 BOOL isDoublePush(int leaving, int arriving) {
 	if ( (index2bb(leaving)&RANK_2) && (index2bb(arriving)&RANK_4) )
 		return TRUE;
@@ -1134,14 +1184,18 @@ BOOL isDoublePush(int leaving, int arriving) {
 	return FALSE;
 }
 
+// Retrieves the square at which an en passant move is valid
 char getEpSquare(int leaving) {
+	// If the pawn is leaving rank 2, then return the square after the square that was left
 	if (index2bb(leaving)&RANK_2)
 		return leaving+8;
+	// If the pawn was leaving rank 7, return the square before the square that was left
 	if (index2bb(leaving)&RANK_7)
 		return leaving-8;
 	return -1;
 }
 
+// Checks to see if two same-colored pawns are on the same file (i.e. one behind another)
 BOOL isDoubledPawn(Bitboard position, int board[]) {
 	char pieceColor = board[bb2index(position)]&COLOR_MASK;
 
@@ -1150,6 +1204,7 @@ BOOL isDoubledPawn(Bitboard position, int board[]) {
 	return FALSE;
 }
 
+// Checks to see if a pawn has no friendly pawn on an adjacent file
 BOOL isIsolatedPawn(Bitboard position, int board[]) {
 	Bitboard sideFiles = fileFilter(east(position) | west(position));
 	char pieceColor = board[bb2index(position)]&COLOR_MASK;
@@ -1159,42 +1214,51 @@ BOOL isIsolatedPawn(Bitboard position, int board[]) {
 	return FALSE;
 }
 
+// Checks to see if a pawn is behind all same-color pawns on the adjacent files
 BOOL isBackwardsPawn(Bitboard position, int board[]) {
+	// Fill all elements to the sides of the current position
 	Bitboard squaresFilter = east(position) | west(position);
 	char pieceColor = board[bb2index(position)]&COLOR_MASK;
 
+	// Fill squaresFilter with a ray going towards the opponent from the current position
 	if ( pieceColor == BLACK ) {
 		squaresFilter |= northRay(squaresFilter);
 	} else {
 		squaresFilter |= southRay(squaresFilter);
 	}
 
+	// If no same-colored pieces are in squaresFilter, then the pawn is backwards
 	if (countPieces( getPawns(board)&getColoredPieces(board, pieceColor)&squaresFilter ) == 0)
 		return TRUE;
 	return FALSE;
 }
 
+// Checks to see if a pawn has no opposing pawns blocking it from reaching the other side of the board
 BOOL isPassedPawn(Bitboard position, int board[]) {
 	Bitboard squaresFilter = 0;
 	char pieceColor = board[bb2index(position)]&COLOR_MASK;
 
+	// Fill a 3 wide ray going towards the opponent from the current position
 	if ( pieceColor == BLACK ) {
 		squaresFilter |= southRay(east(position)) | southRay(west(position)) | southRay(position);
 	} else {
 		squaresFilter |= northRay(east(position)) | northRay(west(position)) | northRay(position);
 	}
 
+	// If no opposite colored pawns are in that ray, the pawn is not opposed
 	if (countPieces( getPawns(board)&getColoredPieces(board, opponent(pieceColor))&squaresFilter ) == 0)
 		return TRUE;
 	return FALSE;
 }
 
+// Checks to see if there are no pawns on a given file
 BOOL isOpenFile(Bitboard position, int board[]) {
 	if (countPieces( getPawns(board)&fileFilter(position) ) == 0)
 		return TRUE;
 	return FALSE;
 }
 
+// Checks to see if there is only one pawn on a given file
 BOOL isSemiOpenFile(Bitboard position, int board[]) {
 	if (countPieces( getPawns(board)&fileFilter(position) ) == 1)
 		return TRUE;
@@ -1203,8 +1267,10 @@ BOOL isSemiOpenFile(Bitboard position, int board[]) {
 
 // ========== KNIGHT =========
 
+// Retrieves all knights on the board
 Bitboard getKnights(int board[]) { return getPieces(board, KNIGHT); }
 
+// Returns a bitboard containing all of the valid knight attacks from the current location
 Bitboard knightAttacks(Bitboard moving_piece) {
     return NNE(moving_piece) | ENE(moving_piece) |
            NNW(moving_piece) | WNW(moving_piece) |
@@ -1212,25 +1278,34 @@ Bitboard knightAttacks(Bitboard moving_piece) {
            SSW(moving_piece) | WSW(moving_piece);
 }
 
+// Returns all of the valid attacks that do not already have a same-colored piece in them
 Bitboard knightMoves(Bitboard moving_piece, int board[], char color) {
     return knightAttacks(moving_piece) & not(getColoredPieces(board, color));
 }
 
+// Fills all possible squares a knight can hit within a certain number of jumps
 Bitboard knightFill(Bitboard moving_piece, int jumps) {
+	// Start with moving piece
 	Bitboard fill = moving_piece;
 	int i;
+	// For i < jumps
 	for (i=0; i<jumps; i++) {
+		// Find knight attacks from current fill, bitwise or the result onto fill
 		fill |= knightAttacks(fill);
 	}
 	return fill;
 }
 
+// Calculates how many moves it will take to reach a square from the current square
 int knightDistance(Bitboard leaving_square, Bitboard arriving_square) {
 	Bitboard fill = leaving_square;
 	int dist = 0;
 
+	// While not at the arriving square
 	while ((fill & arriving_square) == 0) {
+		// Increment distance (number of moves)
 		dist++;
+		// Add knightAttacks at fill to fill
 		fill |= knightAttacks(fill);
 	}
 	return dist;
@@ -1238,24 +1313,33 @@ int knightDistance(Bitboard leaving_square, Bitboard arriving_square) {
 
 // ========== KING ===========
 
+// Gets the location of the king at a given color
 Bitboard getKing(int board[], char color) {
 	return getPieces(board, KING) & getColoredPieces(board, color);
 }
 
+// Return a bitboard of all king attacks
 Bitboard kingAttacks(Bitboard moving_piece) {
+	// Fill east and west
 	Bitboard kingAtks = moving_piece | east(moving_piece) | west(moving_piece);
+	// Fill north and south from both
 	kingAtks |= north(kingAtks) | south(kingAtks);
+	// Return with center piece removed
     return kingAtks & not(moving_piece);
 }
 
+// Return all king attacks that are not occupied by a same-colored piece
 Bitboard kingMoves(Bitboard moving_piece, int board[], char color) {
     return kingAttacks(moving_piece) & not(getColoredPieces(board, color));
 }
 
+// Checks if castling kingside is valid
 BOOL canCastleKingside(Position * position, char color) {
 	switch(color) {
 
 	case WHITE:
+		// If can castle kingside, all of the pieces are in the right spot, 
+		// none of the spaces are under attack, then return true
 		if ( (position->castlingRights&CASTLE_KINGSIDE_WHITE) &&
 			 (position->board[str2index("e1")] == (WHITE|KING)) &&
 			 (position->board[str2index("f1")] == EMPTY) &&
@@ -1269,6 +1353,8 @@ BOOL canCastleKingside(Position * position, char color) {
 			return FALSE;
 
 	case BLACK:
+		// If can castle kingside, all of the pieces are in the right spot, 
+		// none of the spaces are under attack, then return true
 		if ( (position->castlingRights&CASTLE_KINGSIDE_BLACK) &&
 			 (position->board[str2index("e8")] == (BLACK|KING)) &&
 			 (position->board[str2index("f8")] == EMPTY) &&
@@ -1285,10 +1371,13 @@ BOOL canCastleKingside(Position * position, char color) {
 	return FALSE;
 }
 
+// Checks if castling queenside is valid
 BOOL canCastleQueenside(Position * position, char color) {
 	switch(color) {
 
 	case WHITE:
+		// If can castle queenside, all of the pieces are in the right spot, 
+		// none of the spaces are under attack, then return true
 		if ( (position->castlingRights&CASTLE_QUEENSIDE_WHITE) &&
 			 (position->board[str2index("a1")] == (WHITE|ROOK)) &&
 			 (position->board[str2index("b1")] == EMPTY) &&
@@ -1303,6 +1392,8 @@ BOOL canCastleQueenside(Position * position, char color) {
 			return FALSE;
 
 	case BLACK:
+		// If can castle queenside, all of the pieces are in the right spot, 
+		// none of the spaces are under attack, then return true
 		if ( (position->castlingRights&CASTLE_QUEENSIDE_BLACK) &&
 				 (position->board[str2index("a8")] == (BLACK|ROOK)) &&
 				 (position->board[str2index("b8")] == EMPTY) &&
@@ -1320,18 +1411,24 @@ BOOL canCastleQueenside(Position * position, char color) {
 	return FALSE;
 }
 
+// Removes the right to castle from a piece
 char removeCastlingRights(char original_rights, char removed_rights) {
+	// Flips bits of removed rights, bitwise and's it onto the original
     return (char) (original_rights & ~(removed_rights));
 }
 
 // ========== BISHOP =========
 
+// Gets all bishops on the board
 Bitboard getBishops(int board[]) { return getPieces(board, BISHOP); }
 
+// Generates a northeastern attack ray from all elements on the passed in bitboard
 Bitboard NE_ray(Bitboard bb) {
 	int i;
+	// Add first NE ray
 	Bitboard ray = NE(bb);
 
+	// Add remaining NE rays starting from current ray
 	for (i=0; i<6; i++) {
 		ray |= NE(ray);
 	}
@@ -1339,10 +1436,13 @@ Bitboard NE_ray(Bitboard bb) {
 	return ray & ALL_SQUARES;
 }
 
+// Generates southeastern attack ray from all elements on the passed in bitboard
 Bitboard SE_ray(Bitboard bb) {
 	int i;
+	// Add first SE ray
 	Bitboard ray = SE(bb);
 
+	// Add remaining SE rays
 	for (i=0; i<6; i++) {
 		ray |= SE(ray);
 	}
@@ -1350,10 +1450,13 @@ Bitboard SE_ray(Bitboard bb) {
 	return ray & ALL_SQUARES;
 }
 
+// Generates northwestern attack ray from all elements on the passed in bitboard
 Bitboard NW_ray(Bitboard bb) {
 	int i;
+	// Add first NW ray
 	Bitboard ray = NW(bb);
 
+	// Add remaining NW rays
 	for (i=0; i<6; i++) {
 		ray |= NW(ray);
 	}
@@ -1361,10 +1464,13 @@ Bitboard NW_ray(Bitboard bb) {
 	return ray & ALL_SQUARES;
 }
 
+// Generates southwestern attack ray from all elements on the passed in bitboard
 Bitboard SW_ray(Bitboard bb) {
 	int i;
+	// Add first SW ray
 	Bitboard ray = SW(bb);
 
+	// Add remaining SW rays
 	for (i=0; i<6; i++) {
 		ray |= SW(ray);
 	}
@@ -1372,8 +1478,12 @@ Bitboard SW_ray(Bitboard bb) {
 	return ray & ALL_SQUARES;
 }
 
+// Generates northeastern attack ray from the location of the piece
 Bitboard NE_attack(Bitboard single_piece, int board[], char color) {
+	// Find pieces blocking the attack
 	Bitboard blocker = lsb(NE_ray(single_piece) & getOccupiedSquares(board));
+
+	// If there is a blocker, return the ray of the piece xor'd with the ray of the blocker
 	if (blocker) {
 		return NE_ray(single_piece) ^ NE_ray(blocker);
 	} else {
@@ -1381,8 +1491,12 @@ Bitboard NE_attack(Bitboard single_piece, int board[], char color) {
 	}
 }
 
+// Generates northwestern attack ray from the location of the piece
 Bitboard NW_attack(Bitboard single_piece, int board[], char color) {
+	// Find pieces blocking the attack
 	Bitboard blocker = lsb(NW_ray(single_piece) & getOccupiedSquares(board));
+
+	// If there is a blocker, return the ray of the piece xor'd with the ray of the blocker
 	if (blocker) {
 		return NW_ray(single_piece) ^ NW_ray(blocker);
 	} else {
@@ -1390,8 +1504,12 @@ Bitboard NW_attack(Bitboard single_piece, int board[], char color) {
 	}
 }
 
+// Generates southeastern attack ray from the location of the piece
 Bitboard SE_attack(Bitboard single_piece, int board[], char color) {
+	// Find pieces blocking the attack
 	Bitboard blocker = msb(SE_ray(single_piece) & getOccupiedSquares(board));
+
+	// If there is a blocker, return the ray of the piece xor'd with the ray of the blocker
 	if (blocker) {
 		return SE_ray(single_piece) ^ SE_ray(blocker);
 	} else {
@@ -1399,8 +1517,12 @@ Bitboard SE_attack(Bitboard single_piece, int board[], char color) {
 	}
 }
 
+// Generates southwestern attack ray from the location of the piece
 Bitboard SW_attack(Bitboard single_piece, int board[], char color) {
+	// Find pieces blocking the attack
 	Bitboard blocker = msb(SW_ray(single_piece) & getOccupiedSquares(board));
+
+	// If there is a blocker, return the ray of the piece xor'd with the ray of the blocker
 	if (blocker) {
 		return SW_ray(single_piece) ^ SW_ray(blocker);
 	} else {
@@ -1408,30 +1530,38 @@ Bitboard SW_attack(Bitboard single_piece, int board[], char color) {
 	}
 }
 
+// Return attack vectors along the sw-ne vector
 Bitboard diagonalAttacks(Bitboard single_piece, int board[], char color) {
     return NE_attack(single_piece, board, color) | SW_attack(single_piece, board, color);
 }
 
+// Return attack vectors along the nw-se vector
 Bitboard antiDiagonalAttacks(Bitboard single_piece, int board[], char color) {
     return NW_attack(single_piece, board, color) | SE_attack(single_piece, board, color);
 }
 
+// Return both diagonal and anti-diagonal attacks
 Bitboard bishopAttacks(Bitboard moving_pieces, int board[], char color) {
     return diagonalAttacks(moving_pieces, board, color) | antiDiagonalAttacks(moving_pieces, board, color);
 }
 
+// Return all bishop attacks that are not occupied by friendly pieces
 Bitboard bishopMoves(Bitboard moving_piece, int board[], char color) {
     return bishopAttacks(moving_piece, board, color) & not(getColoredPieces(board, color));
 }
 
 // ========== ROOK ===========
 
+// Find all rooks on the board
 Bitboard getRooks(int board[]) { return getPieces(board, ROOK); }
 
+// Generates northern attack ray for all elements on passed-in board
 Bitboard northRay(Bitboard moving_pieces) {
+	// Add first N ray
     Bitboard ray_atks = north(moving_pieces);
 
     int i;
+	// Add remaining N rays
     for (i=0; i<6; i++) {
         ray_atks |= north(ray_atks);
     }
@@ -1439,10 +1569,13 @@ Bitboard northRay(Bitboard moving_pieces) {
     return ray_atks & ALL_SQUARES;
 }
 
+// Generates southern attack ray for all elements on passed-in board
 Bitboard southRay(Bitboard moving_pieces) {
+	// Add first S ray
     Bitboard ray_atks = south(moving_pieces);
 
     int i;
+	// Add remaining S rays
     for (i=0; i<6; i++) {
         ray_atks |= south(ray_atks);
     }
@@ -1450,10 +1583,13 @@ Bitboard southRay(Bitboard moving_pieces) {
     return ray_atks & ALL_SQUARES;
 }
 
+// Generates eastern attack ray for all elements on passed-in board
 Bitboard eastRay(Bitboard moving_pieces) {
+	// Add first E ray
     Bitboard ray_atks = east(moving_pieces);
 
     int i;
+	// Add remaining E rays
     for (i=0; i<6; i++) {
         ray_atks |= east(ray_atks);
     }
@@ -1461,10 +1597,13 @@ Bitboard eastRay(Bitboard moving_pieces) {
     return ray_atks & ALL_SQUARES;
 }
 
+// Generates western attack ray for all elements on passed-in board
 Bitboard westRay(Bitboard moving_pieces) {
+	// Add first W ray
     Bitboard ray_atks = west(moving_pieces);
 
     int i;
+	// Add remaining W rays
     for (i=0; i<6; i++) {
         ray_atks |= west(ray_atks);
     }
@@ -1472,54 +1611,70 @@ Bitboard westRay(Bitboard moving_pieces) {
     return ray_atks & ALL_SQUARES;
 }
 
+// Generates northern attack vector from the location of the piece
 Bitboard northAttack(Bitboard single_piece, int board[], char color) {
+	// Find pieces blocking the attack
     Bitboard blocker = lsb(northRay(single_piece) & getOccupiedSquares(board));
 
+	// If there is a blocker, return the ray of the piece xor'd with the ray of the blocker
     if (blocker)
         return northRay(single_piece) ^ northRay(blocker);
     else
         return northRay(single_piece);
 }
 
+// Generates southern attack vector from the location of the piece
 Bitboard southAttack(Bitboard single_piece, int board[], char color) {
+	// Find pieces blocking the attack
     Bitboard blocker = msb(southRay(single_piece) & getOccupiedSquares(board));
 
+	// If there is a blocker, return the ray of the piece xor'd with the ray of the blocker
     if (blocker)
         return southRay(single_piece) ^ southRay(blocker);
     else
         return southRay(single_piece);
 }
 
+// Returns northern and southern attack vectors
 Bitboard fileAttacks(Bitboard single_piece, int board[], char color) {
     return northAttack(single_piece, board, color) | southAttack(single_piece, board, color);
 }
 
+// Generates eastern attack vector from the location of the piece
 Bitboard eastAttack(Bitboard single_piece, int board[], char color) {
+	// Find pieces blocking the attack
     Bitboard blocker = lsb(eastRay(single_piece) & getOccupiedSquares(board));
 
+	// If there is a blocker, return the ray of the piece xor'd with the ray of the blocker
     if (blocker)
         return eastRay(single_piece) ^ eastRay(blocker);
     else
         return eastRay(single_piece);
 }
 
+// Generates western attack vector from the location of the piece
 Bitboard westAttack(Bitboard single_piece, int board[], char color) {
+	// Find pieces blocking the attack
     Bitboard blocker = msb(westRay(single_piece) & getOccupiedSquares(board));
 
+	// If there is a blocker, return the ray of the piece xor'd with the ray of the blocker
     if (blocker)
         return westRay(single_piece) ^ westRay(blocker);
     else
         return westRay(single_piece);
 }
 
+// Returns eastern and western attack vectors
 Bitboard rankAttacks(Bitboard single_piece, int board[], char color) {
     return eastAttack(single_piece, board, color) | westAttack(single_piece, board, color);
 }
 
+// Returns full set of rook attacks (rank and file attack vectors)
 Bitboard rookAttacks(Bitboard moving_piece, int board[], char color) {
     return fileAttacks(moving_piece, board, color) | rankAttacks(moving_piece, board, color);
 }
 
+// Return all valid attacks that are not occupied by a same-colored piece
 Bitboard rookMoves(Bitboard moving_piece, int board[], char color) {
     return rookAttacks(moving_piece, board, color) & not(getColoredPieces(board, color));
 }
