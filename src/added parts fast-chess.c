@@ -1,4 +1,4 @@
-/*
+
  ============================================================================
  Name        : fast-chess.c
  Author      : Frederico Jordan <fredericojordan@gmail.com>
@@ -19,11 +19,14 @@
 char FILES[8] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
 char RANKS[8] = {'1', '2', '3', '4', '5', '6', '7', '8'};
 
+//declaring a bit array data structure.
 Bitboard FILES_BB[8] = { FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H };
 Bitboard RANKS_BB[8] = { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8 };
 
+//declaring the starting position. FEN ~ stands for Extended Position Description
 char INITIAL_FEN[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+//initializing the board and the Chess pieces 
 int INITIAL_BOARD[NUM_SQUARES] = { WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE|QUEEN, WHITE|KING, WHITE|BISHOP, WHITE|KNIGHT, WHITE|ROOK,
                                    WHITE|PAWN, WHITE|PAWN,   WHITE|PAWN,   WHITE|PAWN,  WHITE|PAWN, WHITE|PAWN,   WHITE|PAWN,   WHITE|PAWN,
                                    EMPTY,      EMPTY,        EMPTY,        EMPTY,       EMPTY,      EMPTY,        EMPTY,        EMPTY,
@@ -35,6 +38,7 @@ int INITIAL_BOARD[NUM_SQUARES] = { WHITE|ROOK, WHITE|KNIGHT, WHITE|BISHOP, WHITE
 
 int PIECE_VALUES[] = { 0, 100, 300, 310, 500, 900, 42000 };
 
+//Initializing Pawn Bonus
 int PAWN_BONUS[] = {0,   0,   0,   0,   0,   0,   0,   0,
 					0,   0,   0, -40, -40,   0,   0,   0,
 					1,   2,   3, -10, -10,   3,   2,   1,
@@ -43,7 +47,7 @@ int PAWN_BONUS[] = {0,   0,   0,   0,   0,   0,   0,   0,
 					4,   8,  12,  16,  16,  12,   8,   4,
 					5,  10,  15,  20,  20,  15,  10,   5,
 					0,   0,   0,   0,   0,   0,   0,   0};
-
+//Initializing Knight Bonus
 int KNIGHT_BONUS[] = {-10, -30, -10, -10, -10, -10, -30, -10,
 					  -10,   0,   0,   0,   0,   0,   0, -10,
 					  -10,   0,   5,   5,   5,   5,   0, -10,
@@ -52,7 +56,7 @@ int KNIGHT_BONUS[] = {-10, -30, -10, -10, -10, -10, -30, -10,
 					  -10,   0,   5,   5,   5,   5,   0, -10,
 					  -10,   0,   0,   0,   0,   0,   0, -10,
 					  -10, -10, -10, -10, -10, -10, -10, -10};
-
+//Initializing Bishop Bonus
 int BISHOP_BONUS[] = {-10, -10, -20, -10, -10, -20, -10, -10,
 					  -10,   0,   0,   0,   0,   0,   0, -10,
 					  -10,   0,   5,   5,   5,   5,   0, -10,
@@ -61,7 +65,7 @@ int BISHOP_BONUS[] = {-10, -10, -20, -10, -10, -20, -10, -10,
 					  -10,   0,   5,   5,   5,   5,   0, -10,
 					  -10,   0,   0,   0,   0,   0,   0, -10,
 					  -10, -10, -10, -10, -10, -10, -10, -10};
-
+//Initializing King Bonus
 int KING_BONUS[] = { 0,  20,  40, -20,   0, -20,  40,  20,
 				   -20, -20, -20, -20, -20, -20, -20, -20,
 				   -40, -40, -40, -40, -40, -40, -40, -40,
@@ -70,7 +74,7 @@ int KING_BONUS[] = { 0,  20,  40, -20,   0, -20,  40,  20,
 				   -40, -40, -40, -40, -40, -40, -40, -40,
 				   -40, -40, -40, -40, -40, -40, -40, -40,
 				   -40, -40, -40, -40, -40, -40, -40, -40};
-
+//Initializing Knight End game Bonus
 int KING_ENDGAME_BONUS[] = { 0,  10,  20,  30,  30,  20,  10,   0,
 							10,  20,  30,  40,  40,  30,  20,  10,
 							20,  30,  40,  50,  50,  40,  30,  20,
@@ -79,7 +83,7 @@ int KING_ENDGAME_BONUS[] = { 0,  10,  20,  30,  30,  20,  10,   0,
 							20,  30,  40,  50,  50,  40,  30,  20,
 							10,  20,  30,  40,  40,  30,  20,  10,
 							 0,  10,  20,  30,  30,  20,  10,   0};
-
+//Initializing Flip Vertical
 int FLIP_VERTICAL[] = {56,  57,  58,  59,  60,  61,  62,  63,
 			           48,  49,  50,  51,  52,  53,  54,  55,
 			           40,  41,  42,  43,  44,  45,  46,  47,
@@ -89,8 +93,8 @@ int FLIP_VERTICAL[] = {56,  57,  58,  59,  60,  61,  62,  63,
 			            8,   9,  10,  11,  12,  13,  14,  15,
 			            0,   1,   2,   3,   4,   5,   6,   7};
 
-
-void getInitialGame(Game * game) {
+//This function will initialize the start of the game and copy data from source to destination
+	void getInitialGame(Game * game) {
 	memcpy(game->position.board, INITIAL_BOARD, sizeof(game->position.board));
 	game->position.toMove = WHITE;
 	game->position.epSquare = -1;
@@ -104,25 +108,26 @@ void getInitialGame(Game * game) {
 	memcpy(game->positionHistory[0], INITIAL_FEN, sizeof(INITIAL_FEN));
 }
 
-void getFenGame(Game * game, char fen[]) {
-	int fenLen = loadFen(&(game->position), fen);
-
+//Fen stands for FenForge.
+//This function is used to allow an online multiplayer
+void getFenGamec
 	game->moveListLen = 0;
 	memset(game->moveList, 0, MAX_PLYS_PER_GAME*sizeof(int));
 	memset(game->positionHistory, 0, MAX_PLYS_PER_GAME*MAX_FEN_LEN*sizeof(char));
 	memcpy(game->positionHistory[0], fen, fenLen);
 }
 
+//This function will load the info about an online player
 int loadFen(Position * position, char fen[]) {
 	// ===== BOARD =====
 	memset(position->board, EMPTY, sizeof(position->board));
-
+//This is the starting position
 	int rank = 7;
-	int boardPos = rank*8;
+	int boardPos = rank*8; // the board of the Position
 	char * charPos = fen;
 
 	char pieceCode = *(charPos);
-
+//loop for getting all the pieces until end 
 	while(pieceCode != ' ') {
 		if (pieceCode == '/') {
 			rank--;
@@ -140,17 +145,15 @@ int loadFen(Position * position, char fen[]) {
 
 	// ===== TO MOVE =====
 	char *nextFenField = strchr(fen, ' ') + 1;
-
+//the team movement turns 
 	if (*nextFenField == 'b') {
 		position->toMove = BLACK;
 	} else {
 		position->toMove = WHITE;
 	}
 
-
 	// ===== CASTLING RIGHTS =====
 	nextFenField = strchr(nextFenField, ' ') + 1;
-
 	position->castlingRights = 0;
 	if (strchr(nextFenField, 'K'))
 		position->castlingRights |= CASTLE_KINGSIDE_WHITE;
@@ -163,7 +166,7 @@ int loadFen(Position * position, char fen[]) {
 
 	// ===== EN PASSANT =====
 	nextFenField = strchr(nextFenField, ' ') + 1;
-
+//other side turn and position
 	if (*nextFenField == '-') {
 		position->epSquare = -1;
 	} else {
@@ -177,7 +180,7 @@ int loadFen(Position * position, char fen[]) {
 		return 1+nextFenField-fen;
 	}
 	nextFenField = strchr(nextFenField, ' ') + 1;
-
+ // Now the capture/pawn halfmove clock:
 	position->halfmoveClock = atoi(nextFenField);
 
 	// ===== FULL MOVE NUMBER =====
@@ -186,7 +189,7 @@ int loadFen(Position * position, char fen[]) {
 		return 1+nextFenField-fen;
 	}
 	nextFenField = strchr(nextFenField, ' ') + 1;
-
+// Finally, the fullmove counter:
 	position->fullmoveNumber = atoi(nextFenField);
 
 	return 1+nextFenField-fen;
@@ -218,7 +221,7 @@ int toFen(char * fen, Position * position) {
 
 	return charCount;
 }
-
+//This function is for the board position.
 int toMinFen(char * fen, Position * position) {
 	int charCount = 0;
 
@@ -226,14 +229,14 @@ int toMinFen(char * fen, Position * position) {
 	int rank = 7;
 	int file = 0;
 	int emptySquares = 0;
-
+//keep looping until rank is grater or equal to 0
 	while(rank >= 0) {
 		int piece = position->board[8*rank+file];
 
 		if ( piece == EMPTY ) {
-			emptySquares++;
+			emptySquares++; //add one to the emptySquares 
 		} else {
-			if (emptySquares != 0) {
+			if (emptySquares != 0) {        //if is is nor an enmtySquares
 			    snprintf(&fen[charCount++], 2, "%d", emptySquares);
 				emptySquares = 0;
 			}
@@ -294,7 +297,6 @@ int toMinFen(char * fen, Position * position) {
 }
 
 // ========= UTILITY =========
-
 BOOL fromInitial(Game * game) {
 	if ( strcmp(game->positionHistory[0], INITIAL_FEN) == 0 )
 		return TRUE;
@@ -321,14 +323,14 @@ int str2index(char *str) {
 Bitboard str2bb(char *str) {
 	return index2bb(str2index(str));
 }
-
+//Boolean checker for available positions
 BOOL isSet(Bitboard bb, int index) {
 	if (bb & index2bb(index))
 		return TRUE;
 	else
 		return FALSE;
 }
-
+//This function to check the number of Squares 
 Bitboard lsb(Bitboard bb) {
 	int i;
 	for (i=0; i<NUM_SQUARES; i++) {
@@ -338,7 +340,7 @@ Bitboard lsb(Bitboard bb) {
 	}
 	return 0;
 }
-
+//This will return the number of squares in the game
 Bitboard msb(Bitboard bb) {
 	int i;
 	for (i=0; i<NUM_SQUARES; i++) {
@@ -348,7 +350,7 @@ Bitboard msb(Bitboard bb) {
 	}
 	return 0;
 }
-
+//This function is for the index of the bitBoard.
 int bb2index(Bitboard bb) {
 	int i;
 	for (i=0; i<NUM_SQUARES; i++) {
@@ -358,7 +360,7 @@ int bb2index(Bitboard bb) {
 	}
 	return -1;
 }
-
+//This is the movement list for the game 
 char * movelist2str(Game * game) {
 	char * movestr = NULL;
 
@@ -385,14 +387,14 @@ char * movelist2str(Game * game) {
 
 	return movestr;
 }
-
+// This function will have the last move in the game
 Move getLastMove(Game * game) {
 	if (game->moveListLen == 0)
 		return 0;
 	else
 		return game->moveList[game->moveListLen-1];
 }
-
+//This function to has the start of the game
 BOOL startsWith(const char *str, const char *pre) {
     size_t lenpre = strlen(pre), lenstr = strlen(str);
 
@@ -401,7 +403,7 @@ BOOL startsWith(const char *str, const char *pre) {
 
     return strncmp(pre, str, lenpre) == 0 ? TRUE : FALSE;
 }
-
+//This function will read from a file names book.txt 
 int countBookOccurrences(Game * game) {
     FILE * fp = fopen("book.txt", "r");
 
@@ -436,7 +438,7 @@ int countBookOccurrences(Game * game) {
 
     return occurrences;
 }
-
+// This function will check for the possibilities of the movement
 Move getBookMove(Game * game) {
 	Move move = 0;
 	int moveNum = rand() % countBookOccurrences(game);
@@ -486,7 +488,7 @@ char getRank(int position) {
 	int rank = (int) (position/8);
 	return RANKS[rank];
 }
-
+//this function is used to genera moves in the game
 Move generateMove(int leavingSquare, int arrivingSquare) {
 	int leaving = (leavingSquare << 8);
 	int arriving = arrivingSquare;
@@ -496,7 +498,7 @@ Move generateMove(int leavingSquare, int arrivingSquare) {
 int getFrom(Move move) {
 	return (move >> 8) & 0xFF;
 }
-
+//for movements
 int getTo(Move move) {
 	return move & 0xFF;
 }
@@ -531,7 +533,7 @@ int char2piece(char pieceCode) {
 	}
 	return 0;
 }
-
+//switch statement to check the input from the user 
 char piece2char(int piece) {
 	switch(piece) {
 	case WHITE|PAWN:
@@ -563,7 +565,7 @@ char piece2char(int piece) {
 	}
 	return 0;
 }
-
+// switch statement to check the specified piece 
 char * piece2str(int piece) {
 	switch(piece&PIECE_MASK) {
 	case PAWN:
@@ -583,7 +585,7 @@ char * piece2str(int piece) {
 	}
 	return "";
 }
-
+//to print the bit board for the game
 void printBitboard(Bitboard bitboard) {
 	int rank, file;
 
@@ -602,7 +604,7 @@ void printBitboard(Bitboard bitboard) {
 	printf("  a b c d e f g h\n");
 	fflush(stdout);
 }
-
+//This print statement for the bord of the chess game
 void printBoard(int board[]) {
 	int rank, file;
 
@@ -618,7 +620,7 @@ void printBoard(int board[]) {
 	printf("  a b c d e f g h\n");
 	fflush(stdout);
 }
-
+//To print the pices positions
 void printGame(Game * game) {
 	printf("Game -> %p (%lu)", game, sizeof(*game));
 	printBoard(game->position.board);
@@ -638,7 +640,7 @@ void printGame(Game * game) {
 Bitboard not(Bitboard bb) {
 	return ~bb & ALL_SQUARES;
 }
-
+//switch between colors 
 char opponent(char color) {
 	switch(color) {
 	case WHITE:
@@ -648,7 +650,7 @@ char opponent(char color) {
 	}
 	return -1;
 }
-
+// cont the number of bits
 int countBits(Bitboard bb) {
 	int i, bitCount = 0;
 	for (i=0; i<NUM_SQUARES; i++) {
@@ -682,18 +684,18 @@ void sortNodes(Node * sortedNodes, Node * nodes, int len, char color) {
 		}
 	}
 }
-
+//This function will print the moves in the game
 void printMove(Move move) {
 	printf("%c%c to %c%c", getFile(getFrom(move)), getRank(getFrom(move)), getFile(getTo(move)), getRank(getTo(move)));
 }
-
+//This function will print the full moves of the game
 void printFullMove(Move move, int board[]) {
 	int from = getFrom(move);
 	int piece = board[from];
 	printf("%s from ", piece2str(piece));
 	printMove(move);
 }
-
+//This function will print the legal moves of the game
 void printLegalMoves(Position * position) {
 	int i;
 	Move moves[MAX_BRANCHING_FACTOR];
@@ -711,7 +713,7 @@ void printNode(Node node) {
 	printMove(node.move);
 	printf(": %d", node.score);
 }
-
+//This function is for the time in the game
 void getTimestamp(char * timestamp) {
     time_t timer;
     struct tm* tm_info;
@@ -814,7 +816,7 @@ void dumpPGN(Game * game, char color, BOOL hasAI) {
 	printf("Dumped game pgn to: %s\n", filename);
 	fflush(stdout);
 }
-
+//This will take care of the movement during the game
 void move2str(char * str, Game * game, int moveNumber) { // TODO: refactor
 	Position posBefore, posAfter;
 	loadFen(&posBefore, game->positionHistory[moveNumber]);
@@ -896,7 +898,7 @@ unsigned long hashPosition(Position * position) {
 
     return hash;
 }
-
+//This to read from the file
 void writeToHashFile(Position * position, int evaluation, int depth) {
     FILE * fp = fopen("hashfile", "a");
 
@@ -922,7 +924,7 @@ Bitboard getColoredPieces(int board[], char color) {
 
 	return colored_squares;
 }
-
+//This function to make ure there are empty squares
 Bitboard getEmptySquares(int board[]) {
 	int i;
 	Bitboard empty_squares = 0;
@@ -937,7 +939,7 @@ Bitboard getEmptySquares(int board[]) {
 Bitboard getOccupiedSquares(int board[]) {
 	return not(getEmptySquares(board));
 }
-
+//This function will get the pieces of the game
 Bitboard getPieces(int board[], int pieceType) {
 	int i;
 	Bitboard pieces = 0;
@@ -968,7 +970,7 @@ Bitboard rankFilter(Bitboard positions) {
 			filter |= RANKS_BB[i];
 	return filter;
 }
-
+//the number of pieces in the game
 char countPieces(Bitboard bitboard) {
 	int i, count=0;
 	for (i=0; i<NUM_SQUARES; i++) {
