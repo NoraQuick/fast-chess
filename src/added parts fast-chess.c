@@ -1,4 +1,4 @@
-
+/*
  ============================================================================
  Name        : fast-chess.c
  Author      : Frederico Jordan <fredericojordan@gmail.com>
